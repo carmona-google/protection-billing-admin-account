@@ -9,9 +9,9 @@ reference-implementation/
 ├── terraform/
 │   ├── partner-control-plane/          # Partner GCP Org infrastructure
 │   │   ├── versions.tf                 # OpenTofu / Terraform >= 1.6, Google Provider ~> 6.12
-│   │   ├── apis.tf                     # Deduplicated API enablement (supports single-project Argolis)
+│   │   ├── apis.tf                     # Deduplicated API enablement (supports single-project GCP setup)
 │   │   ├── variables.tf                # Multi-tenant map, project IDs & DRY_RUN/ENFORCE toggle
-│   │   ├── argolis.tfvars.example      # Ready-to-use Argolis single-project template
+│   │   ├── single_project.tfvars.example # Ready-to-use single-project GCP template
 │   │   ├── iam_custom_roles.tf         # Least-privilege custom roles (delete & setIamPolicy stripped)
 │   │   ├── tenant_linker_factory.tf    # 1:1 isolated sa-linker-<tenant> factory + Firestore sync
 │   │   ├── control_plane_and_watchdog.tf # Firestore, Broker Run, Org Audit Sink, Watchdog & 15m Reconciler
@@ -53,20 +53,20 @@ reference-implementation/
 
 ---
 
-## Despliegue Inicial en un Proyecto de Argolis (Quickstart)
+## Despliegue Inicial en un Proyecto Único de GCP (Quickstart)
 
-Si quieres probar toda la arquitectura sobre un único proyecto de tu cuenta de **Argolis**, sigue estos pasos iniciales:
+Si quieres desplegar toda la arquitectura sobre un único proyecto en tu entorno de **Google Cloud (GCP)**, sigue estos pasos iniciales:
 
 ### 1. Autenticación y variables de entorno
 ```bash
-export PROJECT_ID="tu-proyecto-argolis"
+export PROJECT_ID="tu-proyecto-gcp"
 export REGION="europe-west1"
 
 gcloud auth login
 gcloud auth application-default login
 gcloud config set project "$PROJECT_ID"
 
-# Obtén automáticamente tu Organization ID y Billing Account ID de Argolis:
+# Obtén automáticamente tu Organization ID y Billing Account ID del entorno GCP:
 export ORG_ID=$(gcloud projects describe "$PROJECT_ID" --format="value(parent.id)")
 export BILLING_ID=$(gcloud billing projects describe "$PROJECT_ID" --format="value(billingAccountName)" | sed 's|billingAccounts/||')
 echo "ORG_ID=$ORG_ID  BILLING_ID=$BILLING_ID"
@@ -90,15 +90,15 @@ gcloud builds submit reference-implementation/services/security-watchdog \
   --tag "${REGION}-docker.pkg.dev/${PROJECT_ID}/billing-broker/security-watchdog:v1.1"
 ```
 
-### 3. Configurar `argolis.tfvars` y desplegar con Terraform
+### 3. Configurar `single_project.tfvars` y desplegar con Terraform
 ```bash
 cd reference-implementation/terraform/partner-control-plane
-cp argolis.tfvars.example argolis.tfvars
+cp single_project.tfvars.example single_project.tfvars
 ```
-Edita `argolis.tfvars` sustituyendo `<YOUR_ARGOLIS_PROJECT_ID>`, `<YOUR_ARGOLIS_ORG_ID>` y `<YOUR_ARGOLIS_BILLING_ACCOUNT>` por los valores obtenidos en el paso 1, y ejecuta:
+Edita `single_project.tfvars` sustituyendo `<YOUR_GCP_PROJECT_ID>`, `<YOUR_GCP_ORG_ID>` y `<YOUR_BILLING_ACCOUNT_ID>` por los valores obtenidos en el paso 1, y ejecuta:
 ```bash
 terraform init
-terraform plan -var-file="argolis.tfvars"
-terraform apply -var-file="argolis.tfvars"
+terraform plan -var-file="single_project.tfvars"
+terraform apply -var-file="single_project.tfvars"
 ```
-> **Nota:** `apis.tf` habilita automáticamente las APIs necesarias en el proyecto de Argolis y deduplica los tres planos (`broker`, `linkers`, `secops`) cuando apuntan al mismo `PROJECT_ID`. El Watchdog arrancará en modo `DRY_RUN` para no desvincular ningún proyecto existente hasta que ejecutes el backfill y valides los logs.
+> **Nota:** `apis.tf` habilita automáticamente las APIs necesarias en el proyecto GCP y deduplica los tres planos (`broker`, `linkers`, `secops`) cuando apuntan al mismo `PROJECT_ID`. El Watchdog arrancará en modo `DRY_RUN` para no desvincular ningún proyecto existente hasta que ejecutes el backfill y valides los logs.

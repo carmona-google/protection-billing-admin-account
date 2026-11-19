@@ -51,13 +51,13 @@ variable "watchdog_mode" {
 }
 
 variable "min_instance_count" {
-  description = "Minimum warm Cloud Run instances (use 1 in production for <10s MTTR, 0 in Argolis/dev to save cost)."
+  description = "Minimum warm Cloud Run instances (use 1 in production for <10s MTTR, 0 in dev/sandbox to save cost)."
   type        = number
   default     = 1
 }
 
 variable "broker_ingress" {
-  description = "Cloud Run ingress setting for Billing Broker API (INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER for prod, INGRESS_TRAFFIC_ALL for Argolis testing)."
+  description = "Cloud Run ingress setting for Billing Broker API (INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER for prod, INGRESS_TRAFFIC_ALL for sandbox testing)."
   type        = string
   default     = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
 }

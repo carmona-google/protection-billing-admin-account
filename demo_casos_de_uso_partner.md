@@ -95,7 +95,7 @@ curl -sS -X POST "${BROKER_LOCAL}/v1/tenants/${TENANT_ID}/billing-links" \
 **Objetivo para el Partner:** Demostrar qué ocurre si un atacante roba la sesión de un usuario o CI/CD del cliente e intenta vincular un proyecto externo (`@gmail.com` / *"No Organization"* / otra Organización), exactamente como en el guion de ataque habitual.
 
 ### Paso 2.1 — Intento de enlace de un proyecto externo o sin Organización
-Ejecuta la misma llamada indicando un `projectId` que pertenece a otra Organización o a una cuenta gratuita `@gmail.com` (*No Organization*):
+Ejecuta la misma llamada indicando un `projectId` real (entre 6 y 30 caracteres) que pertenezca a otra Organización o a una cuenta gratuita `@gmail.com` (*No Organization*). Si quieres reproducir exactamente el `403 ANCESTRY_VIOLATION` en directo, concede antes el permiso efímero del Paso 1.2 sobre ese proyecto externo (si la SA no tiene permiso alguno en ese proyecto, CRM v1 devolverá `412 IAM_PROPAGATION_PENDING` tras el backoff de 15s):
 
 ```bash
 curl -i -X POST "${BROKER_LOCAL}/v1/tenants/${TENANT_ID}/billing-links" \
@@ -103,7 +103,7 @@ curl -i -X POST "${BROKER_LOCAL}/v1/tenants/${TENANT_ID}/billing-links" \
   -H "Idempotency-Key: $(uuidgen)" \
   -H "Content-Type: application/json" \
   -d '{
-    "projectId": "proyecto-externo-made-for-abuse",
+    "projectId": "ext-made-for-abuse-demo",
     "accessMode": "EPHEMERAL_PROJECT",
     "costCenter": "CC-FAKE",
     "environment": "SANDBOX",

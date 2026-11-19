@@ -7,6 +7,14 @@
 
 ## Preparación Rápida (Antes de Empezar la Demo)
 
+Cuando `roles/run.invoker` está restringido en Cloud Run (sin `allUsers`), el proxy IAM de Cloud Run valida y **elimina la cabecera `Authorization`** antes de pasar la petición al contenedor FastAPI. Para evitar errores `401 Missing or invalid Bearer Authorization header` durante la demo manteniendo la protección real de Cloud Run IAM, configura `AUTH_MODE=DEV_HEADER_ONLY` en `billing-broker-api`:
+
+```bash
+gcloud run services update billing-broker-api \
+  --region=europe-southwest1 \
+  --update-env-vars="AUTH_MODE=DEV_HEADER_ONLY"
+```
+
 Asegúrate de tener abierto en el navegador **http://127.0.0.1:8080/docs** (con `gcloud run services proxy` activo) y en tu terminal estas variables listas:
 
 ```bash
@@ -14,6 +22,7 @@ export PROJECT_ID=$(gcloud config get-value project)
 export REGION="europe-southwest1"
 export BROKER_LOCAL="http://127.0.0.1:8080"
 export TENANT_ID="demo_sandbox_tenant"
+export CALLER_EMAIL=$(gcloud config get-value account)
 ```
 
 ---
@@ -36,7 +45,7 @@ En **Swagger UI** (`http://127.0.0.1:8080/docs`) o con `curl`, explica al Partne
 
 ```bash
 curl -sS -X POST "${BROKER_LOCAL}/v1/tenants/${TENANT_ID}/link-intents" \
-  -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
+  -H "x-authenticated-principal: ${CALLER_EMAIL}" \
   -H "Content-Type: application/json" \
   -d '{"projectId": "tu-proyecto-dentro-de-org"}' | jq .
 ```
@@ -59,7 +68,7 @@ gcloud projects add-iam-policy-binding "tu-proyecto-dentro-de-org" \
 ### Paso 1.3 — Validación criptográfica y vinculación (`POST /v1/tenants/{tenantId}/billing-links`)
 ```bash
 curl -sS -X POST "${BROKER_LOCAL}/v1/tenants/${TENANT_ID}/billing-links" \
-  -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
+  -H "x-authenticated-principal: ${CALLER_EMAIL}" \
   -H "Idempotency-Key: $(uuidgen)" \
   -H "Content-Type: application/json" \
   -d '{
@@ -90,7 +99,7 @@ Ejecuta la misma llamada indicando un `projectId` que pertenece a otra Organizac
 
 ```bash
 curl -i -X POST "${BROKER_LOCAL}/v1/tenants/${TENANT_ID}/billing-links" \
-  -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
+  -H "x-authenticated-principal: ${CALLER_EMAIL}" \
   -H "Idempotency-Key: $(uuidgen)" \
   -H "Content-Type: application/json" \
   -d '{
@@ -122,7 +131,7 @@ Explica el flujo mostrando el módulo [reference-implementation/terraform/custom
 ### Paso 3.2 — Simulación de la llamada automática del pipeline (`FOLDER_DELEGATED`)
 ```bash
 curl -sS -X POST "${BROKER_LOCAL}/v1/tenants/${TENANT_ID}/billing-links" \
-  -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
+  -H "x-authenticated-principal: ${CALLER_EMAIL}" \
   -H "Idempotency-Key: $(uuidgen)" \
   -H "Content-Type: application/json" \
   -d '{
@@ -147,7 +156,7 @@ curl -sS -X POST "${BROKER_LOCAL}/v1/tenants/${TENANT_ID}/billing-links" \
 Si un script intenta lanzar >5 enlaces en una hora (`max_links_per_hour = 5`), la petición #6 devuelve **`202 Accepted` (`VELOCITY_GATE_TRIGGERED` / `PENDING_FINOPS_APPROVAL`)** y queda pausada hasta que un aprobador FinOps autorizado (`FINOPS_APPROVER_EMAILS`) la valide en:
 ```bash
 curl -sS -X POST "${BROKER_LOCAL}/v1/admin/approvals/<REQUEST_ID>:decide" \
-  -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
+  -H "x-authenticated-principal: ${CALLER_EMAIL}" \
   -H "Content-Type: application/json" \
   -d '{"decision": "APPROVE", "approverNote": "Validado con Tech Lead de Datos"}'
 ```

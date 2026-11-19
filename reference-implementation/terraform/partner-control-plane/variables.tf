@@ -74,6 +74,17 @@ variable "finops_approver_emails" {
   default     = "finops-approver@partner.com"
 }
 
+variable "firestore_delete_protection" {
+  description = "Firestore delete protection (DELETE_PROTECTION_ENABLED for prod, DELETE_PROTECTION_DISABLED for sandbox teardown)."
+  type        = string
+  default     = "DELETE_PROTECTION_ENABLED"
+
+  validation {
+    condition     = contains(["DELETE_PROTECTION_ENABLED", "DELETE_PROTECTION_DISABLED"], var.firestore_delete_protection)
+    error_message = "firestore_delete_protection must be DELETE_PROTECTION_ENABLED or DELETE_PROTECTION_DISABLED."
+  }
+}
+
 variable "tenants" {
   description = "Registry of customer tenants mapped 1:1 to Partner Billing Subaccounts."
   type = map(object({

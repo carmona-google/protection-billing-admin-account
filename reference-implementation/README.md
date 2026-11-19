@@ -154,3 +154,29 @@ gcloud logging read \
   'resource.type="cloud_run_revision" AND resource.labels.service_name="billing-security-watchdog"' \
   --project="$PROJECT_ID" --limit=20 --format="table(timestamp,severity,textPayload)"
 ```
+
+### 5. Borrar todo el entorno y dejarlo limpio (Teardown)
+
+Si quieres eliminar todos los recursos creados en el proyecto de pruebas:
+
+```bash
+# 1. Destruir los recursos gestionados por Terraform (Cloud Run, Firestore, Pub/Sub, Sink, Scheduler, SAs)
+cd reference-implementation/terraform/partner-control-plane
+terraform destroy -var-file="single_project.tfvars" -auto-approve
+
+# (Si activaste firestore_delete_protection = "DELETE_PROTECTION_ENABLED", desactívalo antes:)
+# gcloud firestore databases update --database="(default)" --project="$PROJECT_ID" --no-delete-protection
+
+# 2. Eliminar el repositorio de Artifact Registry y sus imágenes Docker
+gcloud artifacts repositories delete billing-broker \
+  --project="$PROJECT_ID" \
+  --location="$REGION" \
+  --quiet
+
+# 3. (Opcional) Retirar el permiso de Cloud Build a la Compute SA y eliminar tu tfvars local
+gcloud projects remove-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+  --role="roles/cloudbuild.builds.builder"
+
+rm -f single_project.tfvars
+```

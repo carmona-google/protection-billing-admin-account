@@ -5,7 +5,7 @@ resource "google_firestore_database" "broker_db" {
   location_id                       = var.region
   type                              = "FIRESTORE_NATIVE"
   point_in_time_recovery_enablement = "POINT_IN_TIME_RECOVERY_ENABLED"
-  delete_protection_state           = "DELETE_PROTECTION_ENABLED"
+  delete_protection_state           = var.firestore_delete_protection
 
   depends_on = [google_project_service.platform_apis]
 }

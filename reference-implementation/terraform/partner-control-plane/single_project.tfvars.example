@@ -11,11 +11,12 @@ broker_project_id  = "<YOUR_GCP_PROJECT_ID>"
 linkers_project_id = "<YOUR_GCP_PROJECT_ID>"
 secops_project_id  = "<YOUR_GCP_PROJECT_ID>"
 
-region                 = "europe-southwest1"
-watchdog_mode          = "DRY_RUN" # Start in DRY_RUN; flip to ENFORCE after backfill & validation
-min_instance_count     = 0         # Set to 1 in production for <10s Watchdog MTTR & <3.5s Broker P95
-broker_ingress         = "INGRESS_TRAFFIC_ALL"
-finops_approver_emails = "tu-usuario@tu-dominio.com"
+region                      = "europe-southwest1"
+watchdog_mode               = "DRY_RUN" # Start in DRY_RUN; flip to ENFORCE after backfill & validation
+min_instance_count          = 0         # Set to 1 in production for <10s Watchdog MTTR & <3.5s Broker P95
+broker_ingress              = "INGRESS_TRAFFIC_ALL"
+firestore_delete_protection = "DELETE_PROTECTION_DISABLED" # Allows clean `terraform destroy` in sandbox
+finops_approver_emails      = "tu-usuario@tu-dominio.com"
 
 # Images built and pushed to Artifact Registry via `gcloud builds submit`
 broker_container_image   = "europe-southwest1-docker.pkg.dev/<YOUR_GCP_PROJECT_ID>/billing-broker/broker-api:v1.1"

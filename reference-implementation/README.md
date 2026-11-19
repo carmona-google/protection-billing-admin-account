@@ -57,6 +57,12 @@ reference-implementation/
 
 Si quieres desplegar toda la arquitectura sobre un único proyecto en tu entorno de **Google Cloud (GCP)**, sigue estos pasos iniciales:
 
+### 0. Clonar el repositorio
+```bash
+git clone https://github.com/carmona-google/protection-billing-admin-account.git
+cd protection-billing-admin-account
+```
+
 ### 1. Autenticación y variables de entorno
 ```bash
 export PROJECT_ID="tu-proyecto-gcp"

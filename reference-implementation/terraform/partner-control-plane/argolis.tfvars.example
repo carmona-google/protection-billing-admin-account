@@ -1,0 +1,30 @@
+# =============================================================================
+# Argolis Single-Project Deployment Example
+# Copy to `argolis.tfvars` (git-ignored) and replace `<...>` placeholders.
+# =============================================================================
+
+partner_org_id            = "<YOUR_ARGOLIS_ORG_ID>"           # e.g. "123456789012"
+parent_billing_account_id = "<YOUR_ARGOLIS_BILLING_ACCOUNT>"  # e.g. "01A2B3-C4D5E6-F7G8H9"
+
+# In Argolis, all three logical planes can point to the same sandbox project:
+broker_project_id  = "<YOUR_ARGOLIS_PROJECT_ID>"
+linkers_project_id = "<YOUR_ARGOLIS_PROJECT_ID>"
+secops_project_id  = "<YOUR_ARGOLIS_PROJECT_ID>"
+
+region        = "europe-west1"
+watchdog_mode = "DRY_RUN" # Start in DRY_RUN; flip to ENFORCE after backfill & validation
+
+# Images built and pushed to Artifact Registry via `gcloud builds submit`
+broker_container_image   = "europe-west1-docker.pkg.dev/<YOUR_ARGOLIS_PROJECT_ID>/billing-broker/broker-api:v1.1"
+watchdog_container_image = "europe-west1-docker.pkg.dev/<YOUR_ARGOLIS_PROJECT_ID>/billing-broker/security-watchdog:v1.1"
+
+tenants = {
+  demo_argolis_customer = {
+    display_name               = "Demo Argolis Tenant"
+    billing_subaccount_id      = "<YOUR_ARGOLIS_BILLING_ACCOUNT>"
+    allowed_org_ids            = ["organizations/<YOUR_ARGOLIS_ORG_ID>"]
+    max_links_per_hour         = 5
+    default_project_budget_eur = 100
+    security_contact_email     = "tu-usuario@argolis-domain.com"
+  }
+}

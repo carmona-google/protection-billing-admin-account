@@ -85,6 +85,12 @@ variable "firestore_delete_protection" {
   }
 }
 
+variable "cloud_run_deletion_protection" {
+  description = "Cloud Run v2 deletion protection (true for prod, false for sandbox teardown)."
+  type        = bool
+  default     = true
+}
+
 variable "tenants" {
   description = "Registry of customer tenants mapped 1:1 to Partner Billing Subaccounts."
   type = map(object({

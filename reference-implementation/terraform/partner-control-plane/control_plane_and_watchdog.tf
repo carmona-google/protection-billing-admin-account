@@ -50,10 +50,11 @@ resource "google_project_iam_member" "orchestrator_datastore_user" {
 
 # Billing Broker Cloud Run API (Warm min-instance = 1 in prod for <3.5s P95 latency)
 resource "google_cloud_run_v2_service" "billing_broker_api" {
-  project  = var.broker_project_id
-  name     = "billing-broker-api"
-  location = var.region
-  ingress  = var.broker_ingress
+  project             = var.broker_project_id
+  name                = "billing-broker-api"
+  location            = var.region
+  ingress             = var.broker_ingress
+  deletion_protection = var.cloud_run_deletion_protection
 
   depends_on = [google_project_service.platform_apis]
 
@@ -168,10 +169,11 @@ resource "google_pubsub_topic_iam_member" "sink_publisher" {
 
 # Cloud Run v2 Security Watchdog (Warm instance in prod for <10s MTTR)
 resource "google_cloud_run_v2_service" "security_watchdog" {
-  project  = var.secops_project_id
-  name     = "billing-security-watchdog"
-  location = var.region
-  ingress  = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  project             = var.secops_project_id
+  name                = "billing-security-watchdog"
+  location            = var.region
+  ingress             = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  deletion_protection = var.cloud_run_deletion_protection
 
   depends_on = [google_project_service.platform_apis]
 

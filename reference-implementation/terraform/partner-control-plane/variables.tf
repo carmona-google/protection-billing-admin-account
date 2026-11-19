@@ -91,6 +91,12 @@ variable "cloud_run_deletion_protection" {
   default     = true
 }
 
+variable "manage_billing_iam" {
+  description = "Bind custom roles on the target Billing Subaccount(s). Requires roles/billing.admin; set false in shared sandboxes."
+  type        = bool
+  default     = true
+}
+
 variable "tenants" {
   description = "Registry of customer tenants mapped 1:1 to Partner Billing Subaccounts."
   type = map(object({

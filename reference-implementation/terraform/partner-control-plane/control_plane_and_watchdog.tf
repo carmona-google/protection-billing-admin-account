@@ -114,7 +114,7 @@ resource "google_project_iam_member" "watchdog_datastore_user" {
 
 # Grant Watchdog custom detach permissions on each managed Subaccount
 resource "google_billing_account_iam_member" "watchdog_subaccount_access" {
-  for_each = var.tenants
+  for_each = var.manage_billing_iam ? var.tenants : {}
 
   billing_account_id = each.value.billing_subaccount_id
   role               = google_organization_iam_custom_role.billing_watchdog.name

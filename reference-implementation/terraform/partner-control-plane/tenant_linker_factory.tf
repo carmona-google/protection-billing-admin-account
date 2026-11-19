@@ -30,7 +30,7 @@ resource "google_service_account_iam_member" "orchestrator_impersonation" {
 
 # Bind each Tenant Linker SA ONLY to its single mapped Customer Billing Subaccount
 resource "google_billing_account_iam_member" "tenant_subaccount_linker_binding" {
-  for_each = var.tenants
+  for_each = var.manage_billing_iam ? var.tenants : {}
 
   billing_account_id = each.value.billing_subaccount_id
   role               = google_organization_iam_custom_role.subaccount_linker.name

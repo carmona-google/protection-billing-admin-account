@@ -17,6 +17,7 @@ min_instance_count          = 0         # Set to 1 in production for <10s Watchd
 broker_ingress              = "INGRESS_TRAFFIC_ALL"
 firestore_delete_protection   = "DELETE_PROTECTION_DISABLED" # Allows clean `terraform destroy` in sandbox
 cloud_run_deletion_protection = false                        # Allows clean `terraform destroy` in sandbox
+manage_billing_iam            = false                        # Set true when you hold roles/billing.admin on the Billing Account
 finops_approver_emails      = "tu-usuario@tu-dominio.com"
 
 # Images built and pushed to Artifact Registry via `gcloud builds submit`

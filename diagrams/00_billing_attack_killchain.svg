@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1960 286" width="1960" height="286">
+  <defs>
+    <style>
+      .bg { fill: #f8fafc; }
+      .title-bar { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+      .step-pill { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; }
+      .node-title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 15.5px; font-weight: 700; fill: #0f172a; }
+      .node-code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13.5px; font-weight: 700; fill: #0f172a; }
+      .node-sub { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 500; fill: #475569; }
+    </style>
+
+    <filter id="shadow" x="-6%" y="-8%" width="112%" height="124%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.07"/>
+    </filter>
+
+    <marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M 1 1.5 L 10.5 6 L 1 10.5 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <!-- Canvas Background -->
+  <rect width="1960" height="286" rx="14" class="bg"/>
+
+  <!-- Header -->
+  <text x="36" y="38" class="title-bar" font-size="13.5" font-weight="700" fill="#334155" letter-spacing="0.05em">GCP BILLING HIJACK &amp; QUOTA-BURN KILL CHAIN</text>
+  <line x1="36" y1="52" x2="1924" y2="52" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <!-- Connector Arrows -->
+  <line x1="312" y1="162" x2="351" y2="162" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="634" y1="162" x2="673" y2="162" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="956" y1="162" x2="995" y2="162" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="1278" y1="162" x2="1317" y2="162" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="1600" y1="162" x2="1639" y2="162" stroke="#64748b" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <!-- NODE A (x=36, w=276) -->
+  <g transform="translate(36, 76)" filter="url(#shadow)">
+    <rect width="276" height="172" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+    <path d="M 12 0 L 264 0 Q 276 0 276 12 L 276 12 L 0 12 Q 0 0 12 0 Z" fill="#f59e0b"/>
+    <rect x="18" y="26" width="66" height="22" rx="11" fill="#fef3c7"/>
+    <text x="51" y="41" text-anchor="middle" class="step-pill" fill="#b45309">STEP 1</text>
+    <text x="18" y="76" class="node-title">Initial Access</text>
+    <text x="18" y="106" class="node-sub">(AitM Phishing, Malvertising,</text>
+    <text x="18" y="126" class="node-sub">Infostealer, Leaked Key)</text>
+  </g>
+
+  <!-- NODE B (x=358, w=276) -->
+  <g transform="translate(358, 76)" filter="url(#shadow)">
+    <rect width="276" height="172" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+    <path d="M 12 0 L 264 0 Q 276 0 276 12 L 276 12 L 0 12 Q 0 0 12 0 Z" fill="#f97316"/>
+    <rect x="18" y="26" width="66" height="22" rx="11" fill="#ffedd5"/>
+    <text x="51" y="41" text-anchor="middle" class="step-pill" fill="#c2410c">STEP 2</text>
+    <text x="18" y="84" class="node-title">Hijack of Billing Admin</text>
+    <text x="18" y="108" class="node-title">or Billing User</text>
+  </g>
+
+  <!-- NODE C (x=680, w=276) -->
+  <g transform="translate(680, 76)" filter="url(#shadow)">
+    <rect width="276" height="172" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+    <path d="M 12 0 L 264 0 Q 276 0 276 12 L 276 12 L 0 12 Q 0 0 12 0 Z" fill="#ea580c"/>
+    <rect x="18" y="26" width="66" height="22" rx="11" fill="#ffedd5"/>
+    <text x="51" y="41" text-anchor="middle" class="step-pill" fill="#9a3412">STEP 3</text>
+    <text x="18" y="76" class="node-title">Lockout via</text>
+    <text x="18" y="98" class="node-code">SetIamPolicy</text>
+    <text x="18" y="126" class="node-sub">(Add @gmail.com,</text>
+    <text x="18" y="146" class="node-sub">Demote Real Admins)</text>
+  </g>
+
+  <!-- NODE D (x=1002, w=276) -->
+  <g transform="translate(1002, 76)" filter="url(#shadow)">
+    <rect width="276" height="172" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+    <path d="M 12 0 L 264 0 Q 276 0 276 12 L 276 12 L 0 12 Q 0 0 12 0 Z" fill="#ef4444"/>
+    <rect x="18" y="26" width="66" height="22" rx="11" fill="#fee2e2"/>
+    <text x="51" y="41" text-anchor="middle" class="step-pill" fill="#b91c1c">STEP 4</text>
+    <text x="18" y="76" class="node-title">Create 50–200</text>
+    <text x="18" y="98" class="node-title">External Projects</text>
+    <text x="18" y="126" class="node-sub">(Outside Victim GCP Org)</text>
+  </g>
+
+  <!-- NODE E (x=1324, w=276) -->
+  <g transform="translate(1324, 76)" filter="url(#shadow)">
+    <rect width="276" height="172" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+    <path d="M 12 0 L 264 0 Q 276 0 276 12 L 276 12 L 0 12 Q 0 0 12 0 Z" fill="#dc2626"/>
+    <rect x="18" y="26" width="66" height="22" rx="11" fill="#fee2e2"/>
+    <text x="51" y="41" text-anchor="middle" class="step-pill" fill="#991b1b">STEP 5</text>
+    <text x="18" y="76" class="node-title">Mass Link via</text>
+    <text x="18" y="98" class="node-code">UpdateProjectBillingInfo</text>
+    <text x="18" y="126" class="node-sub">(Bypasses Org Policies)</text>
+  </g>
+
+  <!-- NODE F (x=1646, w=276) -->
+  <g transform="translate(1646, 76)" filter="url(#shadow)">
+    <rect width="276" height="172" rx="12" fill="#fff1f2" stroke="#fda4af" stroke-width="1.5"/>
+    <path d="M 12 0 L 264 0 Q 276 0 276 12 L 276 12 L 0 12 Q 0 0 12 0 Z" fill="#be123c"/>
+    <rect x="18" y="26" width="66" height="22" rx="11" fill="#ffe4e6"/>
+    <text x="51" y="41" text-anchor="middle" class="step-pill" fill="#9f1239">STEP 6</text>
+    <text x="18" y="76" class="node-title" fill="#881337">Parallel Gemini /</text>
+    <text x="18" y="98" class="node-title" fill="#881337">Vertex AI / GPU Burn</text>
+    <text x="18" y="128" class="node-sub" fill="#9f1239" font-weight="700">(100k–500k+ EUR in Hours)</text>
+  </g>
+</svg>

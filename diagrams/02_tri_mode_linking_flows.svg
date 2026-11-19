@@ -1,0 +1,190 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1640 760" width="1640" height="760">
+  <defs>
+    <style>
+      .bg { fill: #f8fafc; }
+      .sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+      .h1 { font-size: 20px; font-weight: 800; fill: #0f172a; }
+      .sub { font-size: 13px; font-weight: 500; fill: #475569; }
+      .col-hdr { font-size: 15px; font-weight: 800; }
+      .badge { font-size: 11px; font-weight: 800; letter-spacing: 0.05em; }
+      .step-t { font-size: 13.5px; font-weight: 700; fill: #0f172a; }
+      .step-d { font-size: 12px; font-weight: 500; fill: #475569; }
+      .code-s { font-size: 11.5px; font-weight: 600; }
+    </style>
+
+    <filter id="shadow" x="-4%" y="-6%" width="108%" height="116%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.06"/>
+    </filter>
+
+    <marker id="down-arr" viewBox="0 0 12 12" refX="6" refY="10" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 1.5 1 L 6 10.5 L 10.5 1 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <rect width="1640" height="760" rx="16" class="bg"/>
+
+  <!-- Header -->
+  <text x="36" y="42" class="sans h1">Partner Options Comparison &amp; Dual-Mode Operational Workflows</text>
+  <text x="36" y="64" class="sans sub">Why Option 2 Fails vs. How Mode A, Mode B (Folder-Scoped + Hybrid Option) &amp; Velocity Burst Gates Protect Billing</text>
+  <line x1="36" y1="80" x2="1604" y2="80" stroke="#cbd5e1" stroke-width="1.5"/>
+
+  <!-- ==================== COL 1: REJECTED OPTION 2 (x=36, w=372) ==================== -->
+  <g transform="translate(36, 102)" filter="url(#shadow)">
+    <rect width="372" height="622" rx="14" fill="#fff1f2" stroke="#fda4af" stroke-width="1.5"/>
+    <path d="M 14 0 L 358 0 Q 372 0 372 14 L 372 12 L 0 12 Q 0 0 14 0 Z" fill="#e11d48"/>
+
+    <rect x="20" y="26" width="128" height="24" rx="12" fill="#ffe4e6"/>
+    <text x="84" y="42" text-anchor="middle" class="sans badge" fill="#be123c">DISCARDED (TRAP)</text>
+    <text x="20" y="74" class="sans col-hdr" fill="#881337">Option 2: Temporary</text>
+    <text x="20" y="94" class="mono col-hdr" fill="#9f1239">roles/billing.user to Customer</text>
+
+    <rect x="20" y="116" width="332" height="104" rx="10" fill="#ffffff" stroke="#fecdd3"/>
+    <text x="34" y="140" class="sans step-t">1. Customer Submits 1 Valid Project</text>
+    <text x="34" y="160" class="sans step-d">Portal validates corp-proj-01 and grants</text>
+    <text x="34" y="178" class="mono code-s" fill="#be123c">roles/billing.user for 5 minutes</text>
+    <text x="34" y="198" class="sans step-d">on the Partner Billing Subaccount.</text>
+
+    <line x1="186" y1="220" x2="186" y2="246" stroke="#64748b" stroke-width="2"/>
+    <polygon points="180,242 192,242 186,252" fill="#e11d48"/>
+
+    <rect x="20" y="254" width="332" height="148" rx="10" fill="#ffffff" stroke="#fda4af" stroke-width="1.5"/>
+    <text x="34" y="278" class="sans step-t" fill="#9f1239">2. GCP IAM Structural Blind Spot</text>
+    <text x="34" y="300" class="sans step-d">GCP IAM Conditions CANNOT scope</text>
+    <text x="34" y="318" class="mono code-s" fill="#9f1239">billing.resourceAssociations.create</text>
+    <text x="34" y="338" class="sans step-d">to a single project_id or organization_id!</text>
+    <text x="34" y="360" class="sans step-d">During those 5m (+180s IAM cache skew),</text>
+    <text x="34" y="378" class="sans step-d">the user can link ANY project globally.</text>
+
+    <line x1="186" y1="402" x2="186" y2="428" stroke="#64748b" stroke-width="2"/>
+    <polygon points="180,424 192,424 186,434" fill="#e11d48"/>
+
+    <rect x="20" y="436" width="332" height="162" rx="10" fill="#ffe4e6" stroke="#fb7185"/>
+    <text x="34" y="462" class="sans step-t" fill="#881337">3. Result: Mass Abuse Bypass</text>
+    <text x="34" y="484" class="sans step-d" fill="#881337">A hijacked session or infected CI runner</text>
+    <text x="34" y="502" class="sans step-d" fill="#881337">attaches 150 external @gmail.com</text>
+    <text x="34" y="520" class="sans step-d" fill="#881337">Made-for-Abuse projects in 20 seconds,</text>
+    <text x="34" y="538" class="sans step-d" fill="#881337">plus Terraform suffers IAM race errors.</text>
+    <text x="34" y="572" class="mono code-s" fill="#be123c">Verdict: Unacceptable Wholesale Risk</text>
+  </g>
+
+  <!-- ==================== COL 2: MODE A EPHEMERAL (x=434, w=372) ==================== -->
+  <g transform="translate(434, 102)" filter="url(#shadow)">
+    <rect width="372" height="622" rx="14" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+    <path d="M 14 0 L 358 0 Q 372 0 372 14 L 372 12 L 0 12 Q 0 0 14 0 Z" fill="#16a34a"/>
+
+    <rect x="20" y="26" width="166" height="24" rx="12" fill="#dcfce7"/>
+    <text x="103" y="42" text-anchor="middle" class="sans badge" fill="#15803d">MODE A (DEFAULT UI/CLI)</text>
+    <text x="20" y="74" class="sans col-hdr" fill="#14532d">Refined Option 1b:</text>
+    <text x="20" y="94" class="sans col-hdr" fill="#166534">30m Ephemeral Project Grant</text>
+
+    <rect x="20" y="116" width="332" height="114" rx="10" fill="#ffffff" stroke="#bbf7d0"/>
+    <text x="34" y="140" class="sans step-t">1. Time Condition on Customer Side</text>
+    <text x="34" y="160" class="sans step-d">Portal gives 1-line gcloud binding for</text>
+    <text x="34" y="178" class="mono code-s" fill="#15803d">sa-linker-&lt;tenant&gt; (1:1 isolated SA)</text>
+    <text x="34" y="198" class="sans step-d">on ONLY that project with CEL condition:</text>
+    <text x="34" y="216" class="mono code-s" fill="#0f766e">request.time &lt; now + 30m</text>
+
+    <line x1="186" y1="230" x2="186" y2="256" stroke="#64748b" stroke-width="2"/>
+    <polygon points="180,252 192,252 186,262" fill="#16a34a"/>
+
+    <rect x="20" y="264" width="332" height="138" rx="10" fill="#ffffff" stroke="#bbf7d0"/>
+    <text x="34" y="288" class="sans step-t">2. Cryptographic Ancestry &amp; Link</text>
+    <text x="34" y="308" class="sans step-d">Broker retries IAM propagation (1s..8s),</text>
+    <text x="34" y="326" class="sans step-d">calls CRM v1 getAncestry to prove root</text>
+    <text x="34" y="344" class="mono code-s" fill="#15803d">== organizations/CUSTOMER_ORG_ID</text>
+    <text x="34" y="364" class="sans step-d">writes 90s lease, links subaccount, and</text>
+    <text x="34" y="382" class="sans step-d">creates baseline EUR spend budget.</text>
+
+    <line x1="186" y1="402" x2="186" y2="428" stroke="#64748b" stroke-width="2"/>
+    <polygon points="180,424 192,424 186,434" fill="#16a34a"/>
+
+    <rect x="20" y="436" width="332" height="162" rx="10" fill="#dcfce7" stroke="#4ade80"/>
+    <text x="34" y="462" class="sans step-t" fill="#14532d">3. Result: Zero Standing Footprint</text>
+    <text x="34" y="484" class="sans step-d" fill="#14532d">• At T+30m, Partner SA permission on</text>
+    <text x="34" y="502" class="sans step-d" fill="#14532d">  customer project vanishes 100%.</text>
+    <text x="34" y="522" class="sans step-d" fill="#14532d">• Zero read access to VMs, data, or IAM.</text>
+    <text x="34" y="542" class="sans step-d" fill="#14532d">• 100% blocks external @gmail projects.</text>
+    <text x="34" y="576" class="mono code-s" fill="#15803d">Intrusiveness: 0% Standing</text>
+  </g>
+
+  <!-- ==================== COL 3: MODE B FOLDER IAC (x=832, w=372) ==================== -->
+  <g transform="translate(832, 102)" filter="url(#shadow)">
+    <rect width="372" height="622" rx="14" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+    <path d="M 14 0 L 358 0 Q 372 0 372 14 L 372 12 L 0 12 Q 0 0 14 0 Z" fill="#2563eb"/>
+
+    <rect x="20" y="26" width="184" height="24" rx="12" fill="#dbeafe"/>
+    <text x="112" y="42" text-anchor="middle" class="sans badge" fill="#1d4ed8">MODE B (TERRAFORM / CI)</text>
+    <text x="20" y="74" class="sans col-hdr" fill="#1e3a8a">Folder-Scoped Option 1:</text>
+    <text x="20" y="94" class="sans col-hdr" fill="#1d4ed8">Zero-Touch DevOps Pipeline</text>
+
+    <rect x="20" y="116" width="332" height="114" rx="10" fill="#ffffff" stroke="#bfdbfe"/>
+    <text x="34" y="140" class="sans step-t">1. Scoped to 1 Landing Zone Folder</text>
+    <text x="34" y="160" class="sans step-d">Customer grants billing.projectManager</text>
+    <text x="34" y="178" class="sans step-d">to their dedicated sa-linker-&lt;tenant&gt;</text>
+    <text x="34" y="196" class="mono code-s" fill="#1d4ed8">ONLY on folders/billable-workloads</text>
+    <text x="34" y="216" class="sans step-d">(Never at the Customer Org Root!).</text>
+
+    <line x1="186" y1="230" x2="186" y2="256" stroke="#64748b" stroke-width="2"/>
+    <polygon points="180,252 192,252 186,262" fill="#2563eb"/>
+
+    <rect x="20" y="264" width="332" height="138" rx="10" fill="#ffffff" stroke="#bfdbfe"/>
+    <text x="34" y="288" class="sans step-t">2. Keyless OIDC Terraform Apply</text>
+    <text x="34" y="308" class="sans step-d">Terraform creates google_project with</text>
+    <text x="34" y="326" class="mono code-s" fill="#1d4ed8">billing_account = null</text>
+    <text x="34" y="346" class="sans step-d">and calls Partner REST Module using CI</text>
+    <text x="34" y="364" class="sans step-d">OIDC JWT. Links &amp; budgets synchronously</text>
+    <text x="34" y="382" class="sans step-d">in ~2.1s before enabling project APIs.</text>
+
+    <line x1="186" y1="402" x2="186" y2="428" stroke="#64748b" stroke-width="2"/>
+    <polygon points="180,424 192,424 186,434" fill="#2563eb"/>
+
+    <rect x="20" y="436" width="332" height="162" rx="10" fill="#dbeafe" stroke="#60a5fa"/>
+    <text x="34" y="462" class="sans step-t" fill="#1e3a8a">3. Result: Frictionless IaC Security</text>
+    <text x="34" y="484" class="sans step-d" fill="#1e3a8a">• Customer Terraform SA needs ZERO</text>
+    <text x="34" y="502" class="sans step-d" fill="#1e3a8a">  roles/billing.user (if leaked, 0 spend!).</text>
+    <text x="34" y="522" class="sans step-d" fill="#1e3a8a">• Sliding-window rate limit (5/hr) stops</text>
+    <text x="34" y="540" class="sans step-d" fill="#1e3a8a">  runaway internal CI loops.</text>
+    <text x="34" y="576" class="mono code-s" fill="#1d4ed8">Latency: P95 &lt; 3.5s Synchronous</text>
+  </g>
+
+  <!-- ==================== COL 4: VELOCITY BURST & SA SAFETY (x=1230, w=374) ==================== -->
+  <g transform="translate(1230, 102)" filter="url(#shadow)">
+    <rect width="374" height="622" rx="14" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+    <path d="M 14 0 L 360 0 Q 374 0 374 14 L 374 12 L 0 12 Q 0 0 14 0 Z" fill="#d97706"/>
+
+    <rect x="20" y="26" width="214" height="24" rx="12" fill="#fef3c7"/>
+    <text x="127" y="42" text-anchor="middle" class="sans badge" fill="#b45309">GUARDRAILS &amp; SA ISOLATION</text>
+    <text x="20" y="74" class="sans col-hdr" fill="#78350f">Why sa-linker-&lt;tenant&gt;</text>
+    <text x="20" y="94" class="sans col-hdr" fill="#92400e">Beats Temporary billing.user</text>
+
+    <rect x="20" y="116" width="334" height="114" rx="10" fill="#ffffff" stroke="#fde68a"/>
+    <text x="34" y="140" class="sans step-t">1. Zero Keys &amp; Zero Endpoints</text>
+    <text x="34" y="160" class="sans step-d">No password, browser cookie, or JSON key</text>
+    <text x="34" y="178" class="sans step-d">(disableServiceAccountKeyCreation/Upload).</text>
+    <text x="34" y="196" class="sans step-d">Runs solely via 10m Cloud Run tokens:</text>
+    <text x="34" y="216" class="mono code-s" fill="#b45309">Zero Phishing / Infostealer Surface</text>
+
+    <line x1="187" y1="230" x2="187" y2="256" stroke="#64748b" stroke-width="2"/>
+    <polygon points="181,252 193,252 187,262" fill="#d97706"/>
+
+    <rect x="20" y="264" width="334" height="138" rx="10" fill="#ffffff" stroke="#fde68a"/>
+    <text x="34" y="288" class="sans step-t">2. Mandatory Gatekeeper + Burst Gate</text>
+    <text x="34" y="308" class="sans step-d">Customers never hold Linker credentials.</text>
+    <text x="34" y="326" class="sans step-d">Foreign Org / No-Org -&gt; HTTP 403 Block.</text>
+    <text x="34" y="346" class="sans step-d">Linking &gt;5 projects/hr transitions to</text>
+    <text x="34" y="364" class="mono code-s" fill="#b45309">HTTP 202 PENDING_FINOPS_APPROVAL</text>
+    <text x="34" y="382" class="sans step-d">stopping parallel quota-multiplication.</text>
+
+    <line x1="187" y1="402" x2="187" y2="428" stroke="#64748b" stroke-width="2"/>
+    <polygon points="181,424 193,424 187,434" fill="#d97706"/>
+
+    <rect x="20" y="436" width="334" height="162" rx="10" fill="#fef3c7" stroke="#fbbf24"/>
+    <text x="34" y="462" class="sans step-t" fill="#78350f">3. Stripped Role &amp; &lt;10s Watchdog</text>
+    <text x="34" y="484" class="sans step-d" fill="#78350f">• 1:1 subaccount isolation (delete &amp;</text>
+    <text x="34" y="502" class="sans step-d" fill="#78350f">  setIamPolicy stripped from Linker SA).</text>
+    <text x="34" y="522" class="sans step-d" fill="#78350f">• Out-of-band link without Firestore lease</text>
+    <text x="34" y="540" class="sans step-d" fill="#78350f">  is auto-detached in &lt;10s by Watchdog.</text>
+    <text x="34" y="576" class="mono code-s" fill="#b45309">Optional Hybrid: 30m IaC Ephemeral</text>
+  </g>
+</svg>

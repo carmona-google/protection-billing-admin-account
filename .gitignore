@@ -1,0 +1,30 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Terraform / OpenTofu
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# Secrets & local env
+.env
+*.pem
+*.key
+*-credentials.json
+
+# Internal context & partner correspondence (excluded from repo)
+Contexto.pdf
+CorreoMitigacionRiesgo.pdf
+PropuestaPartner.pdf
+PropuestaPartner.png
+respuesta_partner_nicolas_lopez.md

@@ -1,0 +1,170 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1640 780" width="1640" height="780">
+  <defs>
+    <style>
+      .bg { fill: #f8fafc; }
+      .sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+      .h1 { font-size: 20px; font-weight: 800; fill: #0f172a; }
+      .sub { font-size: 13px; font-weight: 500; fill: #475569; }
+      .sec-hdr { font-size: 13px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+      .st-title { font-size: 13.5px; font-weight: 700; fill: #0f172a; }
+      .st-code { font-size: 12px; font-weight: 700; }
+      .st-desc { font-size: 11.5px; font-weight: 500; fill: #475569; }
+      .lbl { font-size: 11px; font-weight: 600; fill: #334155; }
+    </style>
+
+    <filter id="shadow" x="-4%" y="-6%" width="108%" height="116%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.06"/>
+    </filter>
+
+    <marker id="arr" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 1 1.5 L 10.5 6 L 1 10.5 z" fill="#475569"/>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 1 1.5 L 10.5 6 L 1 10.5 z" fill="#16a34a"/>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 1 1.5 L 10.5 6 L 1 10.5 z" fill="#dc2626"/>
+    </marker>
+  </defs>
+
+  <rect width="1640" height="780" rx="16" class="bg"/>
+
+  <!-- Header -->
+  <text x="36" y="42" class="sans h1">Write-Ahead Lease State Machine &amp; Asymmetric Security Watchdog Matrix</text>
+  <text x="36" y="64" class="sans sub">Eliminating Broker-vs-Watchdog Race Conditions While Preventing Accidental Unlinking of Approved Production Workloads</text>
+  <line x1="36" y1="80" x2="1604" y2="80" stroke="#cbd5e1" stroke-width="1.5"/>
+
+  <!-- ==================== TOP PANEL: WRITE-AHEAD LEASE STATE MACHINE (y=100, h=320) ==================== -->
+  <rect x="36" y="100" width="1568" height="320" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="58" y="128" class="sans sec-hdr" fill="#1e293b">Part 1 — Broker Link Request &amp; Write-Ahead Lease Lifecycle</text>
+
+  <!-- State 1: VALIDATING -->
+  <g transform="translate(58, 168)" filter="url(#shadow)">
+    <rect width="230" height="106" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+    <rect width="230" height="7" rx="3.5" fill="#475569"/>
+    <text x="16" y="30" class="mono st-code" fill="#334155">1. VALIDATING</text>
+    <text x="16" y="52" class="sans st-desc">Check Idempotency-Key,</text>
+    <text x="16" y="68" class="sans st-desc">hourly velocity limit &amp;</text>
+    <text x="16" y="84" class="sans st-desc">CRM v1 getAncestry.</text>
+  </g>
+
+  <!-- Branch Down: REJECTED_SECURITY -->
+  <g transform="translate(58, 314)">
+    <rect width="230" height="82" rx="10" fill="#fff1f2" stroke="#fda4af" stroke-width="1.5"/>
+    <text x="16" y="28" class="mono st-code" fill="#be123c">REJECTED_SECURITY (403)</text>
+    <text x="16" y="48" class="sans st-desc">Foreign Org ID or No-Org</text>
+    <text x="16" y="64" class="sans st-desc">Project -&gt; Logs P2 Incident.</text>
+  </g>
+  <line x1="173" y1="274" x2="173" y2="308" stroke="#dc2626" stroke-width="2" marker-end="url(#arr-red)"/>
+
+  <!-- Branch Up/Middle: PENDING_FINOPS_APPROVAL -->
+  <g transform="translate(358, 314)">
+    <rect width="270" height="82" rx="10" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+    <text x="16" y="28" class="mono st-code" fill="#b45309">PENDING_FINOPS_APPROVAL</text>
+    <text x="16" y="48" class="sans st-desc">Hourly Velocity Burst (&gt;Max/hr)</text>
+    <text x="16" y="64" class="sans st-desc">-&gt; FIDO2 FinOps Human Gate.</text>
+  </g>
+  <path d="M 288 242 L 322 242 L 322 355 L 352 355" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- State 2: LINKING_LEASE_ACQUIRED -->
+  <g transform="translate(358, 156)" filter="url(#shadow)">
+    <rect width="310" height="126" rx="10" fill="#ecfdf5" stroke="#34d399" stroke-width="2"/>
+    <rect width="310" height="8" rx="4" fill="#059669"/>
+    <text x="16" y="32" class="mono st-code" fill="#065f46">2. LINKING_LEASE_ACQUIRED</text>
+    <text x="16" y="54" class="sans st-desc" fill="#064e3b">Written to Firestore BEFORE calling</text>
+    <text x="16" y="72" class="sans st-desc" fill="#064e3b">Cloud Billing API (TTL = 90 seconds).</text>
+    <text x="16" y="94" class="mono st-code" fill="#047857">Prevents Watchdog False-Positive!</text>
+  </g>
+  <line x1="288" y1="214" x2="352" y2="214" stroke="#16a34a" stroke-width="2.5" marker-end="url(#arr-green)"/>
+  <path d="M 628 355 L 652 355 L 652 288" fill="none" stroke="#16a34a" stroke-width="2" marker-end="url(#arr-green)"/>
+
+  <!-- State 3: BUDGET_PROVISIONING -->
+  <g transform="translate(744, 168)" filter="url(#shadow)">
+    <rect width="268" height="106" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+    <rect width="268" height="7" rx="3.5" fill="#0284c7"/>
+    <text x="16" y="30" class="mono st-code" fill="#0369a1">3. BUDGET_PROVISIONING</text>
+    <text x="16" y="52" class="sans st-desc">updateBillingInfo == 200 OK;</text>
+    <text x="16" y="68" class="sans st-desc">creates baseline 50/90/100%</text>
+    <text x="16" y="84" class="sans st-desc">project spend budget.</text>
+  </g>
+  <line x1="668" y1="218" x2="738" y2="218" stroke="#16a34a" stroke-width="2.5" marker-end="url(#arr-green)"/>
+
+  <!-- State 4: ACTIVE -->
+  <g transform="translate(1088, 156)" filter="url(#shadow)">
+    <rect width="286" height="126" rx="10" fill="#f0fdf4" stroke="#4ade80" stroke-width="2"/>
+    <rect width="286" height="8" rx="4" fill="#16a34a"/>
+    <text x="16" y="32" class="mono st-code" fill="#15803d">4. ACTIVE (HTTP 201)</text>
+    <text x="16" y="54" class="sans st-desc">Recorded in Firestore collection:</text>
+    <text x="16" y="74" class="mono st-code" fill="#1e293b">approved_project_bindings</text>
+    <text x="16" y="98" class="sans st-desc">Protected from prod auto-unlink.</text>
+  </g>
+  <line x1="1012" y1="218" x2="1082" y2="218" stroke="#16a34a" stroke-width="2.5" marker-end="url(#arr-green)"/>
+
+  <!-- Async Retry Saga -->
+  <g transform="translate(1088, 314)">
+    <rect width="286" height="82" rx="10" fill="#f0f9ff" stroke="#7dd3fc" stroke-width="1.5"/>
+    <text x="16" y="28" class="mono st-code" fill="#0369a1">ACTIVE_BUDGET_RETRY_QUEUED</text>
+    <text x="16" y="48" class="sans st-desc">If Budgets API 5xx, link stays live</text>
+    <text x="16" y="64" class="sans st-desc">&amp; Cloud Tasks retries budget.</text>
+  </g>
+  <path d="M 960 274 L 960 355 L 1082 355" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="1231" y1="314" x2="1231" y2="288" stroke="#16a34a" stroke-width="2" marker-end="url(#arr-green)"/>
+
+  <!-- Controlled Unlink -->
+  <g transform="translate(1432, 178)">
+    <rect width="148" height="84" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="74" y="36" text-anchor="middle" class="mono st-code" fill="#475569">UNLINKED</text>
+    <text x="74" y="56" text-anchor="middle" class="sans st-desc">Decommissioned</text>
+  </g>
+  <line x1="1374" y1="220" x2="1426" y2="220" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- ==================== BOTTOM PANEL: TWO-TIER WATCHDOG MATRIX (y=444, h=302) ==================== -->
+  <rect x="36" y="444" width="1568" height="302" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="58" y="472" class="sans sec-hdr" fill="#991b1b">Part 2 — Real-Time Security Watchdog Asymmetric Remediation Policy</text>
+
+  <!-- Tier 1A Card -->
+  <g transform="translate(58, 494)" filter="url(#shadow)">
+    <rect width="488" height="228" rx="12" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5"/>
+    <rect width="488" height="8" rx="4" fill="#dc2626"/>
+    <text x="20" y="34" class="sans st-title" fill="#991b1b">Tier 1A: Unregistered / External Project Attached</text>
+    <text x="20" y="58" class="mono st-code" fill="#b91c1c">Signal: UpdateProjectBillingInfo without Binding or Lease</text>
+    <text x="20" y="84" class="sans st-desc">• Triggered if ANY external or unapproved project is linked</text>
+    <text x="20" y="102" class="sans st-desc">  outside the Partner Broker API (or missed event caught by</text>
+    <text x="20" y="120" class="sans st-desc">  the 15-minute Cloud Scheduler Drift Reconciler).</text>
+    <rect x="20" y="140" width="448" height="68" rx="8" fill="#ffffff" stroke="#f87171"/>
+    <text x="34" y="164" class="mono st-code" fill="#dc2626">Action: 100% Automated Detach (&lt;10 Seconds)</text>
+    <text x="34" y="184" class="sans st-desc">PUT /v1/projects/{id}/billingInfo -&gt; billingAccountName = ""</text>
+    <text x="34" y="200" class="sans st-desc">Zero billable AI/GPU runtime; pages Partner SecOps P1.</text>
+  </g>
+
+  <!-- Tier 1B Card -->
+  <g transform="translate(576, 494)" filter="url(#shadow)">
+    <rect width="488" height="228" rx="12" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"/>
+    <rect width="488" height="8" rx="4" fill="#ea580c"/>
+    <text x="20" y="34" class="sans st-title" fill="#9a3412">Tier 1B: Rogue Billing Account IAM Change</text>
+    <text x="20" y="58" class="mono st-code" fill="#c2410c">Signal: SetIamPolicy on billingAccounts/*</text>
+    <text x="20" y="84" class="sans st-desc">• Detects any grant of roles/billing.admin or billing.user</text>
+    <text x="20" y="102" class="sans st-desc">  to @gmail.com or principals outside the Partner PAM &amp;</text>
+    <text x="20" y="120" class="sans st-desc">  sa-linker-* allowlist.</text>
+    <rect x="20" y="140" width="448" height="68" rx="8" fill="#ffffff" stroke="#fb923c"/>
+    <text x="34" y="164" class="mono st-code" fill="#c2410c">Action: &lt;60s P1 SecOps Escalation + Org Policy Block</text>
+    <text x="34" y="184" class="sans st-desc">Prevented upstream by allowedPolicyMemberDomains;</text>
+    <text x="34" y="200" class="sans st-desc">Watchdog delivers instant IAM diff to SecOps Duty Lead.</text>
+  </g>
+
+  <!-- Tier 2 Card -->
+  <g transform="translate(1094, 494)" filter="url(#shadow)">
+    <rect width="488" height="228" rx="12" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+    <rect width="488" height="8" rx="4" fill="#2563eb"/>
+    <text x="20" y="34" class="sans st-title" fill="#1e3a8a">Tier 2: Spend Spike on Approved Prod Project</text>
+    <text x="20" y="58" class="mono st-code" fill="#1d4ed8">Signal: Budget 100% or &gt;5x Hourly AI/GPU Velocity</text>
+    <text x="20" y="84" class="sans st-desc">• Project IS in approved_project_bindings (legitimate</text>
+    <text x="20" y="102" class="sans st-desc">  customer workload experiencing either traffic surge or</text>
+    <text x="20" y="120" class="sans st-desc">  compromised internal API key).</text>
+    <rect x="20" y="140" width="448" height="68" rx="8" fill="#ffffff" stroke="#60a5fa"/>
+    <text x="34" y="164" class="mono st-code" fill="#1d4ed8">Action: Safe Human / MSA Sign-Off Gate (Default)</text>
+    <text x="34" y="184" class="sans st-desc">Sends P1 alert + signed 1-click Unlink button to Customer</text>
+    <text x="34" y="200" class="sans st-desc">&amp; FinOps (auto-unlinks ONLY if MSA sandbox opt-in = true).</text>
+  </g>
+</svg>

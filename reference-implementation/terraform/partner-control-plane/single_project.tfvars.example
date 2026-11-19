@@ -11,15 +11,15 @@ broker_project_id  = "<YOUR_GCP_PROJECT_ID>"
 linkers_project_id = "<YOUR_GCP_PROJECT_ID>"
 secops_project_id  = "<YOUR_GCP_PROJECT_ID>"
 
-region                 = "europe-west1"
+region                 = "europe-southwest1"
 watchdog_mode          = "DRY_RUN" # Start in DRY_RUN; flip to ENFORCE after backfill & validation
 min_instance_count     = 0         # Set to 1 in production for <10s Watchdog MTTR & <3.5s Broker P95
 broker_ingress         = "INGRESS_TRAFFIC_ALL"
 finops_approver_emails = "tu-usuario@tu-dominio.com"
 
 # Images built and pushed to Artifact Registry via `gcloud builds submit`
-broker_container_image   = "europe-west1-docker.pkg.dev/<YOUR_GCP_PROJECT_ID>/billing-broker/broker-api:v1.1"
-watchdog_container_image = "europe-west1-docker.pkg.dev/<YOUR_GCP_PROJECT_ID>/billing-broker/security-watchdog:v1.1"
+broker_container_image   = "europe-southwest1-docker.pkg.dev/<YOUR_GCP_PROJECT_ID>/billing-broker/broker-api:v1.1"
+watchdog_container_image = "europe-southwest1-docker.pkg.dev/<YOUR_GCP_PROJECT_ID>/billing-broker/security-watchdog:v1.1"
 
 tenants = {
   demo_sandbox_tenant = {

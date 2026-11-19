@@ -60,7 +60,7 @@ Si quieres desplegar toda la arquitectura sobre un único proyecto en tu entorno
 ### 1. Autenticación y variables de entorno
 ```bash
 export PROJECT_ID="tu-proyecto-gcp"
-export REGION="europe-west1"
+export REGION="europe-southwest1"
 
 gcloud auth login
 gcloud auth application-default login

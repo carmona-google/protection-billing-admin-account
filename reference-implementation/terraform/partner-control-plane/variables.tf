@@ -26,7 +26,7 @@ variable "secops_project_id" {
 variable "region" {
   description = "Primary GCP region for Cloud Run and Firestore."
   type        = string
-  default     = "europe-west1"
+  default     = "europe-southwest1"
 }
 
 variable "broker_container_image" {

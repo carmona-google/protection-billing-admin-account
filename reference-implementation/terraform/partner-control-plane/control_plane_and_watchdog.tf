@@ -245,7 +245,7 @@ resource "google_pubsub_subscription" "watchdog_push" {
 # 15-Minute Full-State Drift Reconciler (Defense-in-Depth against missed events)
 resource "google_cloud_scheduler_job" "drift_reconciler" {
   project   = var.secops_project_id
-  region    = var.region
+  region    = var.scheduler_region
   name      = "billing-subaccount-drift-reconciler-15m"
   schedule  = "*/15 * * * *"
   time_zone = "UTC"

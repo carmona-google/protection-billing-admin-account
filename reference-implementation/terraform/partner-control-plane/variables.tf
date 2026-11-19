@@ -29,6 +29,12 @@ variable "region" {
   default     = "europe-southwest1"
 }
 
+variable "scheduler_region" {
+  description = "GCP region for Cloud Scheduler (must be a Cloud Scheduler-supported region such as europe-west1)."
+  type        = string
+  default     = "europe-west1"
+}
+
 variable "broker_container_image" {
   description = "Artifact Registry digest for the Billing Broker API service."
   type        = string

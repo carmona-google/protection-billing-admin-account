@@ -20,13 +20,15 @@ import asyncio
 import logging
 import os
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Literal
 
 import google.auth
 import google.auth.transport.requests
+from google.oauth2 import id_token as google_id_token
 import httpx
-from fastapi import FastAPI, Header, HTTPException, Path, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Path, status
 from google.cloud import firestore
 from pydantic import BaseModel, Field
 
@@ -35,15 +37,37 @@ logger = logging.getLogger("billing-broker")
 
 FIRESTORE_PROJECT_ID = os.environ.get("FIRESTORE_PROJECT_ID")
 LEASE_TTL_SECONDS = int(os.environ.get("LEASE_TTL_SECONDS", "90"))
+AUTH_MODE = os.environ.get("AUTH_MODE", "ENFORCE_JWT")  # ENFORCE_JWT | DEV_HEADER_ONLY
+BROKER_AUDIENCE = os.environ.get("BROKER_AUDIENCE")
+FINOPS_APPROVER_EMAILS = {
+    e.strip().lower()
+    for e in os.environ.get("FINOPS_APPROVER_EMAILS", "").split(",")
+    if e.strip()
+}
 GCP_SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
+
+_db: firestore.AsyncClient | None = None
+_http_client: httpx.AsyncClient | None = None
+_token_cache: dict[str, tuple[str, datetime]] = {}
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    global _http_client
+    _http_client = httpx.AsyncClient(timeout=20.0)
+    try:
+        yield
+    finally:
+        await _http_client.aclose()
+        _http_client = None
+
 
 app = FastAPI(
     title="Partner Billing Broker API",
-    version="1.0.0",
+    version="1.1.0",
     description="Zero-Standing-Privilege Billing Subaccount Linking Control Plane",
+    lifespan=lifespan,
 )
-
-_db: firestore.AsyncClient | None = None
 
 
 def get_db() -> firestore.AsyncClient:
@@ -51,6 +75,42 @@ def get_db() -> firestore.AsyncClient:
     if _db is None:
         _db = firestore.AsyncClient(project=FIRESTORE_PROJECT_ID)
     return _db
+
+
+def get_http() -> httpx.AsyncClient:
+    if _http_client is None:
+        raise RuntimeError("HTTP client not initialized")
+    return _http_client
+
+
+async def verify_caller_identity(
+    authorization: str | None = Header(default=None),
+    x_authenticated_principal: str = Header(default=""),
+) -> str:
+    """
+    Validates Google OIDC / Identity Platform Bearer JWT in production (`AUTH_MODE=ENFORCE_JWT`).
+    In `DEV_HEADER_ONLY` (unit tests / local dev), falls back to `x-authenticated-principal`.
+    """
+    if AUTH_MODE == "DEV_HEADER_ONLY":
+        if not x_authenticated_principal:
+            raise HTTPException(status_code=401, detail="Missing x-authenticated-principal in dev mode")
+        return x_authenticated_principal
+
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Bearer Authorization header")
+
+    raw_jwt = authorization.removeprefix("Bearer ").strip()
+    try:
+        req = google.auth.transport.requests.Request()
+        claims = await asyncio.to_thread(google_id_token.verify_oauth2_token, raw_jwt, req, BROKER_AUDIENCE)
+    except Exception as exc:
+        logger.warning("JWT verification failed: %s", exc)
+        raise HTTPException(status_code=401, detail="Invalid or expired OIDC token") from exc
+
+    principal = claims.get("email") or claims.get("sub")
+    if not principal:
+        raise HTTPException(status_code=401, detail="OIDC token missing email/sub claim")
+    return str(principal).lower()
 
 
 # ---------------------------------------------------------------------------
@@ -97,7 +157,12 @@ def _get_orchestrator_access_token() -> str:
 
 
 async def mint_tenant_linker_token(client: httpx.AsyncClient, linker_sa_email: str) -> str:
-    """Mints a short-lived (10-minute) OAuth2 token for the isolated per-tenant Linker SA."""
+    """Mints (and caches for 5m) a short-lived 10m OAuth2 token for the isolated Tenant Linker SA."""
+    now = datetime.now(timezone.utc)
+    cached = _token_cache.get(linker_sa_email)
+    if cached and cached[1] > now:
+        return cached[0]
+
     orch_token = await asyncio.to_thread(_get_orchestrator_access_token)
     url = (
         f"https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/"
@@ -111,7 +176,9 @@ async def mint_tenant_linker_token(client: httpx.AsyncClient, linker_sa_email: s
     if resp.status_code != 200:
         logger.error("Impersonation failed for %s: %s", linker_sa_email, resp.text)
         raise HTTPException(status_code=502, detail="Failed to impersonate tenant linker identity")
-    return resp.json()["accessToken"]
+    token = resp.json()["accessToken"]
+    _token_cache[linker_sa_email] = (token, now + timedelta(minutes=5))
+    return token
 
 
 async def fetch_project_ancestry_v1(
@@ -195,10 +262,16 @@ async def attach_billing_and_create_budget(
 # ---------------------------------------------------------------------------
 
 
+@app.get("/healthz")
+async def healthz():
+    return {"status": "ok", "service": "billing-broker-api", "version": "1.1.0"}
+
+
 @app.post("/v1/tenants/{tenant_id}/link-intents", response_model=LinkIntentResponse)
 async def create_mode_a_link_intent(
     payload: LinkIntentRequest,
     tenant_id: str = Path(...),
+    _caller: str = Depends(verify_caller_identity),
 ) -> LinkIntentResponse:
     """Generates the Mode A 30-minute auto-expiring `gcloud` IAM command for a customer project."""
     db = get_db()
@@ -232,10 +305,11 @@ async def create_billing_link(
     payload: BillingLinkRequest,
     tenant_id: str = Path(...),
     idempotency_key: str = Header(..., alias="Idempotency-Key"),
-    x_authenticated_principal: str = Header(default="portal-sso-user"),
+    caller_principal: str = Depends(verify_caller_identity),
 ):
     """Validates ancestry & rate limits, acquires write-ahead lease, and links Billing Subaccount."""
     db = get_db()
+    client = get_http()
 
     # 1. Idempotency check
     idem_query = (
@@ -268,92 +342,91 @@ async def create_billing_link(
     request_id = f"req_{uuid.uuid4()}"
     now = datetime.now(timezone.utc)
 
-    async with httpx.AsyncClient(timeout=20.0) as client:
-        tenant_token = await mint_tenant_linker_token(client, tenant["linker_sa_email"])
-        ancestors = await fetch_project_ancestry_v1(client, tenant_token, payload.projectId)
+    tenant_token = await mint_tenant_linker_token(client, tenant["linker_sa_email"])
+    ancestors = await fetch_project_ancestry_v1(client, tenant_token, payload.projectId)
 
-        # Extract root Organization ID if present
-        org_ancestors = [
-            f"organizations/{a['resourceId']['id']}"
-            for a in ancestors
-            if a.get("resourceId", {}).get("type") == "organization"
-        ]
-        detected_org = org_ancestors[0] if org_ancestors else "NO_ORGANIZATION"
-        allowed_orgs = set(tenant.get("allowed_org_ids", []))
+    # Extract root Organization ID if present
+    org_ancestors = [
+        f"organizations/{a['resourceId']['id']}"
+        for a in ancestors
+        if a.get("resourceId", {}).get("type") == "organization"
+    ]
+    detected_org = org_ancestors[0] if org_ancestors else "NO_ORGANIZATION"
+    allowed_orgs = set(tenant.get("allowed_org_ids", []))
 
-        # 4. Hard-Block Foreign Organization OR "No-Organization" Projects
-        if detected_org == "NO_ORGANIZATION" or detected_org not in allowed_orgs:
-            await db.collection("security_incidents").add(
-                {
-                    "tenant_id": tenant_id,
-                    "billing_subaccount_id": tenant["billing_subaccount_id"],
-                    "severity": "P2_HIGH",
-                    "incident_type": "ANCESTRY_SPOOF_ATTEMPT",
-                    "project_id": payload.projectId,
-                    "detected_org_id": detected_org,
-                    "caller_principal": x_authenticated_principal,
-                    "detected_at": now,
-                }
-            )
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail={
-                    "errorCode": "ANCESTRY_VIOLATION",
-                    "message": f"Project root {detected_org} is not in tenant allowlist.",
-                },
-            )
+    # 4. Hard-Block Foreign Organization OR "No-Organization" Projects
+    if detected_org == "NO_ORGANIZATION" or detected_org not in allowed_orgs:
+        await db.collection("security_incidents").add(
+            {
+                "tenant_id": tenant_id,
+                "billing_subaccount_id": tenant["billing_subaccount_id"],
+                "severity": "P2_HIGH",
+                "incident_type": "ANCESTRY_SPOOF_ATTEMPT",
+                "project_id": payload.projectId,
+                "detected_org_id": detected_org,
+                "caller_principal": caller_principal,
+                "detected_at": now,
+            }
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "errorCode": "ANCESTRY_VIOLATION",
+                "message": f"Project root {detected_org} is not in tenant allowlist.",
+            },
+        )
 
-        # 4B. Velocity Burst Gate -> Queue for Partner FinOps Approval (HTTP 202)
-        if velocity_exceeded:
-            await db.collection("link_requests").document(request_id).set(
-                {
-                    "request_id": request_id,
-                    "idempotency_key": idempotency_key,
-                    "tenant_id": tenant_id,
-                    "project_id": payload.projectId,
-                    "detected_org_id": detected_org,
-                    "state": "PENDING_FINOPS_APPROVAL",
-                    "caller_principal": x_authenticated_principal,
-                    "payload": payload.model_dump(),
-                    "created_at": now,
-                }
-            )
-            raise HTTPException(
-                status_code=status.HTTP_202_ACCEPTED,
-                detail={
-                    "requestId": request_id,
-                    "status": "PENDING_FINOPS_APPROVAL",
-                    "errorCode": "VELOCITY_GATE_TRIGGERED",
-                    "message": "Hourly linking velocity limit exceeded; queued for Partner FinOps approval.",
-                },
-            )
-
-        # 5. Write-Ahead Lease BEFORE calling Cloud Billing API (Zero Watchdog race condition!)
-        lease_expiry = now + timedelta(seconds=LEASE_TTL_SECONDS)
-        req_ref = db.collection("link_requests").document(request_id)
-        await req_ref.set(
+    # 4B. Velocity Burst Gate -> Queue for Partner FinOps Approval (HTTP 202)
+    if velocity_exceeded:
+        await db.collection("link_requests").document(request_id).set(
             {
                 "request_id": request_id,
                 "idempotency_key": idempotency_key,
                 "tenant_id": tenant_id,
                 "project_id": payload.projectId,
                 "detected_org_id": detected_org,
-                "state": "LINKING_LEASE_ACQUIRED",
-                "caller_principal": x_authenticated_principal,
-                "lease_expires_at": lease_expiry,
+                "state": "PENDING_FINOPS_APPROVAL",
+                "caller_principal": caller_principal,
+                "payload": payload.model_dump(),
                 "created_at": now,
             }
         )
-
-        # 6. Execute Billing Link + Baseline Budget
-        budget_eur = payload.monthlyBudgetEur or int(tenant.get("default_project_budget_eur", 500))
-        _, budget_name = await attach_billing_and_create_budget(
-            client=client,
-            tenant_token=tenant_token,
-            project_id=payload.projectId,
-            subaccount_id=tenant["billing_subaccount_id"],
-            budget_eur=budget_eur,
+        raise HTTPException(
+            status_code=status.HTTP_202_ACCEPTED,
+            detail={
+                "requestId": request_id,
+                "status": "PENDING_FINOPS_APPROVAL",
+                "errorCode": "VELOCITY_GATE_TRIGGERED",
+                "message": "Hourly linking velocity limit exceeded; queued for Partner FinOps approval.",
+            },
         )
+
+    # 5. Write-Ahead Lease BEFORE calling Cloud Billing API (Zero Watchdog race condition!)
+    lease_expiry = now + timedelta(seconds=LEASE_TTL_SECONDS)
+    req_ref = db.collection("link_requests").document(request_id)
+    await req_ref.set(
+        {
+            "request_id": request_id,
+            "idempotency_key": idempotency_key,
+            "tenant_id": tenant_id,
+            "project_id": payload.projectId,
+            "detected_org_id": detected_org,
+            "state": "LINKING_LEASE_ACQUIRED",
+            "caller_principal": caller_principal,
+            "lease_expires_at": lease_expiry,
+            "created_at": now,
+        }
+    )
+
+    # 6. Execute Billing Link + Baseline Budget
+    budget_eur = payload.monthlyBudgetEur or int(tenant.get("default_project_budget_eur", 500))
+    _, budget_name = await attach_billing_and_create_budget(
+        client=client,
+        tenant_token=tenant_token,
+        project_id=payload.projectId,
+        subaccount_id=tenant["billing_subaccount_id"],
+        budget_eur=budget_eur,
+    )
 
     final_state = "ACTIVE" if budget_name else "ACTIVE_BUDGET_RETRY_QUEUED"
     linked_at_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -382,7 +455,7 @@ async def create_billing_link(
         "billingSubaccountName": f"billingAccounts/{tenant['billing_subaccount_id']}",
         "baselineBudgetName": budget_name,
         "linkedAt": linked_at_iso,
-        "authenticatedPrincipal": x_authenticated_principal,
+        "authenticatedPrincipal": caller_principal,
     }
     await req_ref.update({"state": final_state, "response_cache": response_payload})
     return response_payload
@@ -392,10 +465,14 @@ async def create_billing_link(
 async def decide_manual_approval(
     decision_req: ApprovalDecisionRequest,
     request_id: str = Path(...),
-    x_approver_principal: str = Header(default="finops-approver@partner.com"),
+    approver_principal: str = Depends(verify_caller_identity),
 ):
     """Partner FinOps manual approval gate for velocity-burst project linking requests."""
+    if FINOPS_APPROVER_EMAILS and approver_principal.lower() not in FINOPS_APPROVER_EMAILS:
+        raise HTTPException(status_code=403, detail="Caller is not an authorized Partner FinOps approver")
+
     db = get_db()
+    client = get_http()
     req_ref = db.collection("link_requests").document(request_id)
     req_snap = await req_ref.get()
     if not req_snap.exists:
@@ -410,7 +487,7 @@ async def decide_manual_approval(
         await req_ref.update(
             {
                 "state": "REJECTED_POLICY",
-                "approver_principal": x_approver_principal,
+                "approver_principal": approver_principal,
                 "approver_note": decision_req.approverNote,
             }
         )
@@ -424,21 +501,20 @@ async def decide_manual_approval(
     await req_ref.update(
         {
             "state": "LINKING_LEASE_ACQUIRED",
-            "approver_principal": x_approver_principal,
+            "approver_principal": approver_principal,
             "lease_expires_at": now + timedelta(seconds=LEASE_TTL_SECONDS),
         }
     )
 
-    async with httpx.AsyncClient(timeout=20.0) as client:
-        tenant_token = await mint_tenant_linker_token(client, tenant["linker_sa_email"])
-        budget_eur = int(req_data.get("payload", {}).get("monthlyBudgetEur", 500))
-        _, budget_name = await attach_billing_and_create_budget(
-            client=client,
-            tenant_token=tenant_token,
-            project_id=project_id,
-            subaccount_id=tenant["billing_subaccount_id"],
-            budget_eur=budget_eur,
-        )
+    tenant_token = await mint_tenant_linker_token(client, tenant["linker_sa_email"])
+    budget_eur = int(req_data.get("payload", {}).get("monthlyBudgetEur", 500))
+    _, budget_name = await attach_billing_and_create_budget(
+        client=client,
+        tenant_token=tenant_token,
+        project_id=project_id,
+        subaccount_id=tenant["billing_subaccount_id"],
+        budget_eur=budget_eur,
+    )
 
     await db.collection("approved_project_bindings").document(project_id).set(
         {

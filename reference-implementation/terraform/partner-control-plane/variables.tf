@@ -50,6 +50,30 @@ variable "watchdog_mode" {
   }
 }
 
+variable "min_instance_count" {
+  description = "Minimum warm Cloud Run instances (use 1 in production for <10s MTTR, 0 in Argolis/dev to save cost)."
+  type        = number
+  default     = 1
+}
+
+variable "broker_ingress" {
+  description = "Cloud Run ingress setting for Billing Broker API (INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER for prod, INGRESS_TRAFFIC_ALL for Argolis testing)."
+  type        = string
+  default     = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
+}
+
+variable "allowed_billing_principals" {
+  description = "Comma-separated allowlist of authorized human/PAM principals or groups allowed on Billing Subaccount IAM."
+  type        = string
+  default     = "group:gcp-billing-pam-admins@partner.com"
+}
+
+variable "finops_approver_emails" {
+  description = "Comma-separated list of Partner FinOps approver emails authorized to call :decide."
+  type        = string
+  default     = "finops-approver@partner.com"
+}
+
 variable "tenants" {
   description = "Registry of customer tenants mapped 1:1 to Partner Billing Subaccounts."
   type = map(object({

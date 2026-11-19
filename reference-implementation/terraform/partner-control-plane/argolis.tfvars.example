@@ -11,8 +11,11 @@ broker_project_id  = "<YOUR_ARGOLIS_PROJECT_ID>"
 linkers_project_id = "<YOUR_ARGOLIS_PROJECT_ID>"
 secops_project_id  = "<YOUR_ARGOLIS_PROJECT_ID>"
 
-region        = "europe-west1"
-watchdog_mode = "DRY_RUN" # Start in DRY_RUN; flip to ENFORCE after backfill & validation
+region             = "europe-west1"
+watchdog_mode      = "DRY_RUN" # Start in DRY_RUN; flip to ENFORCE after backfill & validation
+min_instance_count = 0         # Set to 1 in production for <10s Watchdog MTTR & <3.5s Broker P95
+broker_ingress     = "INGRESS_TRAFFIC_ALL"
+finops_approver_emails = "tu-usuario@argolis-domain.com"
 
 # Images built and pushed to Artifact Registry via `gcloud builds submit`
 broker_container_image   = "europe-west1-docker.pkg.dev/<YOUR_ARGOLIS_PROJECT_ID>/billing-broker/broker-api:v1.1"

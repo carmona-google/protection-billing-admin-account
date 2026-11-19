@@ -68,50 +68,60 @@ def main() -> None:
             allowed_orgs = set(t.get("allowed_org_ids", []))
             tier = t.get("tier", "ENTERPRISE_ORG")
 
-            url = f"https://cloudbilling.googleapis.com/v1/billingAccounts/{subaccount_id}/projects"
-            resp = client.get(url, headers=headers)
-            resp.raise_for_status()
+            page_token: str | None = None
+            while True:
+                url = f"https://cloudbilling.googleapis.com/v1/billingAccounts/{subaccount_id}/projects"
+                params = {"pageSize": 100}
+                if page_token:
+                    params["pageToken"] = page_token
+                resp = client.get(url, headers=headers, params=params)
+                resp.raise_for_status()
+                body = resp.json()
 
-            for item in resp.json().get("projectBillingInfo", []):
-                if not item.get("billingEnabled"):
-                    continue
-                project_id = item["projectId"]
-                detected_org = lookup_org_id(client, headers, project_id)
+                for item in body.get("projectBillingInfo", []):
+                    if not item.get("billingEnabled"):
+                        continue
+                    project_id = item["projectId"]
+                    detected_org = lookup_org_id(client, headers, project_id)
 
-                if detected_org not in allowed_orgs:
-                    anomalies.append(
-                        {
-                            "tenantId": tenant_id,
-                            "subaccountId": subaccount_id,
-                            "projectId": project_id,
-                            "detectedOrg": detected_org,
-                        }
-                    )
-                    logger.warning(
-                        "ANOMALY SKIPPED: tenant=%s subaccount=%s project=%s detected_org=%s",
-                        tenant_id,
-                        subaccount_id,
-                        project_id,
-                        detected_org,
-                    )
-                    continue
+                    if detected_org not in allowed_orgs:
+                        anomalies.append(
+                            {
+                                "tenantId": tenant_id,
+                                "subaccountId": subaccount_id,
+                                "projectId": project_id,
+                                "detectedOrg": detected_org,
+                            }
+                        )
+                        logger.warning(
+                            "ANOMALY SKIPPED: tenant=%s subaccount=%s project=%s detected_org=%s",
+                            tenant_id,
+                            subaccount_id,
+                            project_id,
+                            detected_org,
+                        )
+                        continue
 
-                if args.commit:
-                    db.collection("approved_project_bindings").document(project_id).set(
-                        {
-                            "project_id": project_id,
-                            "tenant_id": tenant_id,
-                            "billing_subaccount_id": subaccount_id,
-                            "verified_org_id": detected_org,
-                            "source": "LEGACY_BACKFILL",
-                            "production_unlink_protected": True,
-                            "status": "ACTIVE",
-                            "linked_at": datetime.now(timezone.utc),
-                        },
-                        merge=True,
-                    )
-                total_backfilled += 1
-                logger.info("Verified project=%s (tenant=%s, org=%s)", project_id, tenant_id, detected_org)
+                    if args.commit:
+                        db.collection("approved_project_bindings").document(project_id).set(
+                            {
+                                "project_id": project_id,
+                                "tenant_id": tenant_id,
+                                "billing_subaccount_id": subaccount_id,
+                                "verified_org_id": detected_org,
+                                "source": "LEGACY_BACKFILL",
+                                "production_unlink_protected": True,
+                                "status": "ACTIVE",
+                                "linked_at": datetime.now(timezone.utc),
+                            },
+                            merge=True,
+                        )
+                    total_backfilled += 1
+                    logger.info("Verified project=%s (tenant=%s, org=%s)", project_id, tenant_id, detected_org)
+
+                page_token = body.get("nextPageToken")
+                if not page_token:
+                    break
 
     logger.info(
         "Summary (%s): %d valid projects processed, %d anomalies flagged for manual review.",

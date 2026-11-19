@@ -3,6 +3,8 @@ resource "google_service_account" "broker_orchestrator" {
   project      = var.broker_project_id
   account_id   = "sa-broker-orchestrator"
   display_name = "Billing Broker Control Plane Orchestrator"
+
+  depends_on = [google_project_service.platform_apis]
 }
 
 # 1:1 Tenant-Isolated Linker Service Accounts (Strictly 1 SA per Customer Subaccount)
@@ -13,6 +15,8 @@ resource "google_service_account" "tenant_linker" {
   account_id   = "sa-linker-${substr(replace(lower(each.key), "_", "-"), 0, 18)}"
   display_name = "Billing Linker SA - ${each.value.display_name}"
   description  = "Isolated 1:1 Linker SA for subaccount ${each.value.billing_subaccount_id}"
+
+  depends_on = [google_project_service.platform_apis]
 }
 
 # Allow Broker Orchestrator to mint short-lived (10m) OAuth2 tokens for each Tenant SA

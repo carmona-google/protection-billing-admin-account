@@ -6,6 +6,40 @@ resource "google_firestore_database" "broker_db" {
   type                              = "FIRESTORE_NATIVE"
   point_in_time_recovery_enablement = "POINT_IN_TIME_RECOVERY_ENABLED"
   delete_protection_state           = "DELETE_PROTECTION_ENABLED"
+
+  depends_on = [google_project_service.platform_apis]
+}
+
+# Composite Index 1: Broker hourly velocity guardrail query (tenant_id + created_at)
+resource "google_firestore_index" "link_requests_velocity" {
+  project    = var.broker_project_id
+  database   = google_firestore_database.broker_db.name
+  collection = "link_requests"
+
+  fields {
+    field_path = "tenant_id"
+    order      = "ASCENDING"
+  }
+  fields {
+    field_path = "created_at"
+    order      = "ASCENDING"
+  }
+}
+
+# Composite Index 2: Watchdog write-ahead lease check (project_id + state)
+resource "google_firestore_index" "link_requests_lease" {
+  project    = var.broker_project_id
+  database   = google_firestore_database.broker_db.name
+  collection = "link_requests"
+
+  fields {
+    field_path = "project_id"
+    order      = "ASCENDING"
+  }
+  fields {
+    field_path = "state"
+    order      = "ASCENDING"
+  }
 }
 
 resource "google_project_iam_member" "orchestrator_datastore_user" {
@@ -14,18 +48,20 @@ resource "google_project_iam_member" "orchestrator_datastore_user" {
   member  = "serviceAccount:${google_service_account.broker_orchestrator.email}"
 }
 
-# Billing Broker Cloud Run API (Warm min-instance = 1 for <3.5s P95 latency)
+# Billing Broker Cloud Run API (Warm min-instance = 1 in prod for <3.5s P95 latency)
 resource "google_cloud_run_v2_service" "billing_broker_api" {
   project  = var.broker_project_id
   name     = "billing-broker-api"
   location = var.region
-  ingress  = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
+  ingress  = var.broker_ingress
+
+  depends_on = [google_project_service.platform_apis]
 
   template {
     service_account = google_service_account.broker_orchestrator.email
 
     scaling {
-      min_instance_count = 1
+      min_instance_count = var.min_instance_count
       max_instance_count = 20
     }
 
@@ -40,6 +76,10 @@ resource "google_cloud_run_v2_service" "billing_broker_api" {
         name  = "LEASE_TTL_SECONDS"
         value = "90"
       }
+      env {
+        name  = "FINOPS_APPROVER_EMAILS"
+        value = var.finops_approver_emails
+      }
     }
   }
 }
@@ -52,12 +92,16 @@ resource "google_service_account" "security_watchdog" {
   project      = var.secops_project_id
   account_id   = "sa-security-watchdog"
   display_name = "Real-Time Billing Security Watchdog"
+
+  depends_on = [google_project_service.platform_apis]
 }
 
 resource "google_service_account" "watchdog_invoker" {
   project      = var.secops_project_id
   account_id   = "sa-watchdog-pubsub-invoker"
   display_name = "Pub/Sub & Scheduler Invoker for Billing Watchdog"
+
+  depends_on = [google_project_service.platform_apis]
 }
 
 # Watchdog reads/updates Approved Project Bindings and Security Incidents in Firestore
@@ -81,6 +125,17 @@ resource "google_pubsub_topic" "billing_admin_events" {
   project                    = var.secops_project_id
   name                       = "billing-admin-events"
   message_retention_duration = "604800s" # 7 days
+
+  depends_on = [google_project_service.platform_apis]
+}
+
+# Dead-Letter Queue (DLQ) Topic for poison/undeliverable audit log events
+resource "google_pubsub_topic" "billing_admin_events_dlq" {
+  project                    = var.secops_project_id
+  name                       = "billing-admin-events-dlq"
+  message_retention_duration = "1209600s" # 14 days
+
+  depends_on = [google_project_service.platform_apis]
 }
 
 # Organization-Level Aggregated Audit Log Sink (include_children = true)
@@ -100,6 +155,8 @@ resource "google_logging_organization_sink" "billing_audit_sink" {
       protoPayload.methodName="google.iam.v1.IAMPolicy.SetIamPolicy"
     )
   EOT
+
+  depends_on = [google_project_service.platform_apis]
 }
 
 resource "google_pubsub_topic_iam_member" "sink_publisher" {
@@ -109,18 +166,20 @@ resource "google_pubsub_topic_iam_member" "sink_publisher" {
   member  = google_logging_organization_sink.billing_audit_sink.writer_identity
 }
 
-# Cloud Run v2 Security Watchdog (Warm instance for <10s MTTR)
+# Cloud Run v2 Security Watchdog (Warm instance in prod for <10s MTTR)
 resource "google_cloud_run_v2_service" "security_watchdog" {
   project  = var.secops_project_id
   name     = "billing-security-watchdog"
   location = var.region
   ingress  = "INGRESS_TRAFFIC_INTERNAL_ONLY"
 
+  depends_on = [google_project_service.platform_apis]
+
   template {
     service_account = google_service_account.security_watchdog.email
 
     scaling {
-      min_instance_count = 1
+      min_instance_count = var.min_instance_count
       max_instance_count = 10
     }
 
@@ -135,6 +194,14 @@ resource "google_cloud_run_v2_service" "security_watchdog" {
         name  = "WATCHDOG_MODE"
         value = var.watchdog_mode
       }
+      env {
+        name  = "LINKERS_PROJECT_ID"
+        value = var.linkers_project_id
+      }
+      env {
+        name  = "ALLOWED_BILLING_PRINCIPALS"
+        value = var.allowed_billing_principals
+      }
     }
   }
 }
@@ -147,7 +214,7 @@ resource "google_cloud_run_v2_service_iam_member" "watchdog_invoker_binding" {
   member   = "serviceAccount:${google_service_account.watchdog_invoker.email}"
 }
 
-# Push Subscription for Instantaneous (<10s) Audit Event Delivery
+# Push Subscription for Instantaneous (<10s) Audit Event Delivery + DLQ
 resource "google_pubsub_subscription" "watchdog_push" {
   project = var.secops_project_id
   name    = "billing-admin-events-watchdog-push"
@@ -160,6 +227,11 @@ resource "google_pubsub_subscription" "watchdog_push" {
     oidc_token {
       service_account_email = google_service_account.watchdog_invoker.email
     }
+  }
+
+  dead_letter_policy {
+    dead_letter_topic     = google_pubsub_topic.billing_admin_events_dlq.id
+    max_delivery_attempts = 5
   }
 
   retry_policy {
@@ -175,6 +247,8 @@ resource "google_cloud_scheduler_job" "drift_reconciler" {
   name      = "billing-subaccount-drift-reconciler-15m"
   schedule  = "*/15 * * * *"
   time_zone = "UTC"
+
+  depends_on = [google_project_service.platform_apis]
 
   http_target {
     http_method = "POST"

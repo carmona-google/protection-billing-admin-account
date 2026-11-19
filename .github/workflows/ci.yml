@@ -1,0 +1,35 @@
+name: CI Validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install service dependencies
+        run: |
+          pip install -r reference-implementation/services/broker-api/requirements.txt
+          pip install -r reference-implementation/services/security-watchdog/requirements.txt
+      - name: Syntax check & unit tests
+        run: |
+          python3 -m py_compile \
+            reference-implementation/services/broker-api/main.py \
+            reference-implementation/services/security-watchdog/main.py \
+            reference-implementation/scripts/backfill_existing_projects.py
+          python3 -m unittest discover -s reference-implementation/tests -v
+
+  terraform-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Terraform format check
+        run: terraform fmt -check -recursive reference-implementation/terraform

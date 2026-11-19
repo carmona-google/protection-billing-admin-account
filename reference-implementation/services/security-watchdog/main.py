@@ -34,11 +34,35 @@ logger = logging.getLogger("security-watchdog")
 
 FIRESTORE_PROJECT_ID = os.environ.get("FIRESTORE_PROJECT_ID")
 WATCHDOG_MODE = os.environ.get("WATCHDOG_MODE", "DRY_RUN")  # DRY_RUN | ENFORCE
-PARTNER_ALLOWED_DOMAIN_SUFFIX = os.environ.get("PARTNER_ALLOWED_DOMAIN_SUFFIX", ".iam.gserviceaccount.com")
+LINKERS_PROJECT_ID = os.environ.get("LINKERS_PROJECT_ID", "partner-billing-linkers-prod")
+ALLOWED_BILLING_PRINCIPALS = {
+    p.strip().lower()
+    for p in os.environ.get("ALLOWED_BILLING_PRINCIPALS", "").split(",")
+    if p.strip()
+}
 GCP_SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
 
-app = FastAPI(title="Partner Billing Security Watchdog", version="1.0.0")
+app = FastAPI(title="Partner Billing Security Watchdog", version="1.1.0")
 _db: firestore.AsyncClient | None = None
+
+
+@app.get("/healthz")
+async def healthz():
+    return {"status": "ok", "service": "billing-security-watchdog", "mode": WATCHDOG_MODE}
+
+
+def is_authorized_billing_member(member: str) -> bool:
+    """
+    Strictly allows ONLY:
+      1. Per-tenant Linker SAs inside the Partner's isolated Linkers project (`sa-linker-*@<LINKERS_PROJECT_ID>.iam.gserviceaccount.com`)
+      2. Explicitly allowlisted Partner PAM groups / principals (`ALLOWED_BILLING_PRINCIPALS`)
+    Blocks @gmail.com AND any external attacker `.iam.gserviceaccount.com` service accounts.
+    """
+    normalized = member.strip().lower()
+    if normalized in ALLOWED_BILLING_PRINCIPALS:
+        return True
+    expected_sa_suffix = f"@{LINKERS_PROJECT_ID.lower()}.iam.gserviceaccount.com"
+    return normalized.startswith("serviceaccount:sa-linker-") and normalized.endswith(expected_sa_suffix)
 
 
 def get_db() -> firestore.AsyncClient:
@@ -185,7 +209,7 @@ async def handle_audit_log_push(request: Request):
             role = b.get("role", "")
             if role in ("roles/billing.admin", "roles/billing.user"):
                 for member in b.get("members", []):
-                    if "@gmail.com" in member or not member.endswith(PARTNER_ALLOWED_DOMAIN_SUFFIX):
+                    if not is_authorized_billing_member(member):
                         rogue_grants.append(f"{role}:{member}")
 
         if rogue_grants:
@@ -222,24 +246,36 @@ async def reconcile_all_subaccounts():
     async with httpx.AsyncClient(timeout=20.0) as client:
         for t_doc in tenants:
             subaccount_id = t_doc.to_dict()["billing_subaccount_id"]
-            url = f"https://cloudbilling.googleapis.com/v1/billingAccounts/{subaccount_id}/projects"
-            resp = await client.get(url, headers={"Authorization": f"Bearer {token}"})
-            if resp.status_code != 200:
-                logger.error("Reconcile list failed for %s: %s", subaccount_id, resp.text)
-                continue
+            page_token: str | None = None
 
-            for info in resp.json().get("projectBillingInfo", []):
-                if not info.get("billingEnabled"):
-                    continue
-                project_id = info["projectId"]
-                if not await is_project_authorized_or_leased(db, project_id, subaccount_id):
-                    action = await emergency_unlink_rogue_project(
-                        db=db,
-                        project_id=project_id,
-                        subaccount_id=subaccount_id,
-                        actor_email="drift-reconciler-detected",
-                        detection_source="SCHEDULED_15M_RECONCILER",
-                    )
-                    remediated.append({"projectId": project_id, "subaccountId": subaccount_id, "action": action})
+            while True:
+                url = f"https://cloudbilling.googleapis.com/v1/billingAccounts/{subaccount_id}/projects"
+                params = {"pageSize": 100}
+                if page_token:
+                    params["pageToken"] = page_token
+
+                resp = await client.get(url, headers={"Authorization": f"Bearer {token}"}, params=params)
+                if resp.status_code != 200:
+                    logger.error("Reconcile list failed for %s: %s", subaccount_id, resp.text)
+                    break
+
+                body = resp.json()
+                for info in body.get("projectBillingInfo", []):
+                    if not info.get("billingEnabled"):
+                        continue
+                    project_id = info["projectId"]
+                    if not await is_project_authorized_or_leased(db, project_id, subaccount_id):
+                        action = await emergency_unlink_rogue_project(
+                            db=db,
+                            project_id=project_id,
+                            subaccount_id=subaccount_id,
+                            actor_email="drift-reconciler-detected",
+                            detection_source="SCHEDULED_15M_RECONCILER",
+                        )
+                        remediated.append({"projectId": project_id, "subaccountId": subaccount_id, "action": action})
+
+                page_token = body.get("nextPageToken")
+                if not page_token:
+                    break
 
     return {"reconciledTenants": len(tenants), "driftRemediations": remediated}

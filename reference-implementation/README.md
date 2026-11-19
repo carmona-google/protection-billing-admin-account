@@ -102,3 +102,43 @@ terraform plan -var-file="single_project.tfvars"
 terraform apply -var-file="single_project.tfvars"
 ```
 > **Nota:** `apis.tf` habilita automáticamente las APIs necesarias en el proyecto GCP y deduplica los tres planos (`broker`, `linkers`, `secops`) cuando apuntan al mismo `PROJECT_ID`. El Watchdog arrancará en modo `DRY_RUN` para no desvincular ningún proyecto existente hasta que ejecutes el backfill y valides los logs.
+
+### 4. Cómo acceder y probar la aplicación una vez desplegada
+
+Al finalizar `terraform apply`, obtén la URL del servicio y concédete permiso de invocación en Cloud Run (`roles/run.invoker`):
+```bash
+export BROKER_URL=$(terraform output -raw broker_api_uri)
+export MY_EMAIL=$(gcloud config get-value account)
+
+gcloud run services add-iam-policy-binding billing-broker-api \
+  --project="$PROJECT_ID" \
+  --region="$REGION" \
+  --member="user:${MY_EMAIL}" \
+  --role="roles/run.invoker"
+```
+
+#### Opción A — Acceso visual a la API (Swagger UI / OpenAPI) mediante proxy autenticado
+```bash
+gcloud run services proxy billing-broker-api --project="$PROJECT_ID" --region="$REGION" --port=8080
+```
+Abre en tu navegador **http://127.0.0.1:8080/docs** para explorar y probar los endpoints de forma interactiva.
+
+#### Opción B — Llamada directa por `curl` con token OIDC
+```bash
+# 1. Verificar estado del servicio
+curl -sS -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
+  "${BROKER_URL}/healthz"
+
+# 2. Generar un comando gcloud efímero de Modo A para un proyecto de prueba
+curl -sS -X POST "${BROKER_URL}/v1/tenants/demo_sandbox_tenant/link-intents" \
+  -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
+  -H "Content-Type: application/json" \
+  -d '{"projectId": "tu-proyecto-destino"}'
+```
+
+#### Verificar los logs del Security Watchdog (`DRY_RUN`)
+```bash
+gcloud logging read \
+  'resource.type="cloud_run_revision" AND resource.labels.service_name="billing-security-watchdog"' \
+  --project="$PROJECT_ID" --limit=20 --format="table(timestamp,severity,textPayload)"
+```

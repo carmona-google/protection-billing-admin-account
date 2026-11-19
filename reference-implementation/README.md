@@ -76,6 +76,12 @@ echo "ORG_ID=$ORG_ID  BILLING_ID=$BILLING_ID"
 ```bash
 gcloud services enable artifactregistry.googleapis.com cloudbuild.googleapis.com run.googleapis.com
 
+# En proyectos nuevos, Cloud Build usa la Compute Engine SA por defecto y necesita roles/cloudbuild.builds.builder
+export PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format="value(projectNumber)")
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+  --role="roles/cloudbuild.builds.builder"
+
 gcloud artifacts repositories create billing-broker \
   --repository-format=docker \
   --location="$REGION" \
